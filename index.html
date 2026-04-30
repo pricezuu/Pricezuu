@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricezuu — Live Deal Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700;9..144,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ef;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #e2ddd6;
+    --ink: #1a1714;
+    --muted: #8c877f;
+    --accent: #d4560a;
+    --accent2: #1a6b3c;
+    --accent3: #1a4a8a;
+    --warn: #c17f00;
+    --tag-bg: #ede9e3;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    min-height: 100vh;
+  }
+
+  /* Grain texture overlay */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  .wrapper { max-width: 1320px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    padding: 0;
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1320px; margin: 0 auto; padding: 14px 24px;
+    gap: 20px;
+  }
+
+  .logo {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+
+  .logo-name {
+    font-family: var(--font-display);
+    font-size: 24px; font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-name span { color: var(--accent); }
+
+  .logo-tag {
+    font-family: var(--font-mono);
+    font-size: 10px; color: #6b6660;
+    text-transform: uppercase; letter-spacing: 2px;
+  }
+
+  .header-stats {
+    display: flex; gap: 28px;
+  }
+
+  .hstat { text-align: center; }
+
+  .hstat-val {
+    font-family: var(--font-mono);
+    font-size: 22px; font-weight: 500;
+    color: #fff; line-height: 1;
+    display: block;
+  }
+
+  .hstat-val.orange { color: var(--accent); }
+  .hstat-val.green  { color: #4ade80; }
+
+  .hstat-label {
+    font-size: 9px; color: #6b6660;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-top: 3px; display: block;
+  }
+
+  .header-right {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .updated-text {
+    font-family: var(--font-mono);
+    font-size: 10px; color: #6b6660;
+  }
+
+  .btn-refresh {
+    background: var(--accent);
+    border: none; color: white;
+    padding: 8px 16px; border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-refresh:hover { background: #b84508; }
+  .spinning { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TICKER BANNER ── */
+  .ticker-wrap {
+    background: var(--accent);
+    overflow: hidden; height: 32px;
+    display: flex; align-items: center;
+  }
+
+  .ticker-inner {
+    display: flex; gap: 0;
+    animation: ticker 40s linear infinite;
+    white-space: nowrap;
+  }
+
+  .ticker-item {
+    font-family: var(--font-mono);
+    font-size: 11px; color: white;
+    padding: 0 40px;
+  }
+
+  .ticker-sep { color: rgba(255,255,255,0.4); }
+
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ── CONTROLS ── */
+  .controls {
+    padding: 20px 0 16px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative; flex: 1; min-width: 200px;
+  }
+
+  .search-icon {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted); font-size: 14px;
+    pointer-events: none;
+  }
+
+  .search-box {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px 10px 36px;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .filter-pills {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+
+  .pill {
+    padding: 7px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .pill:hover { border-color: var(--ink); color: var(--ink); }
+  .pill.active { background: var(--ink); border-color: var(--ink); color: white; }
+
+  .sort-select {
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 13px;
+    cursor: pointer; outline: none;
+  }
+
+  /* ── DEAL CARDS ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    padding-bottom: 60px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    position: relative;
+    display: flex; flex-direction: column;
+  }
+
+  .card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    border-color: #c8c3bb;
+  }
+
+  .card.top-deal {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .discount-ribbon {
+    position: absolute; top: 12px; left: -2px;
+    background: var(--accent);
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 13px; font-weight: 500;
+    padding: 4px 10px 4px 12px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  }
+
+  .card-image {
+    width: 100%; height: 160px;
+    object-fit: contain;
+    background: var(--surface2);
+    padding: 12px;
+  }
+
+  .card-image-placeholder {
+    width: 100%; height: 160px;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+  }
+
+  .card-body {
+    padding: 14px 16px;
+    flex: 1; display: flex; flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-meta {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .card-cat {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--muted); font-family: var(--font-mono);
+  }
+
+  .retailer-badge {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px;
+    font-family: var(--font-mono);
+  }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 700;
+    line-height: 1.3; color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .price-block {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+
+  .price-now {
+    font-family: var(--font-mono);
+    font-size: 22px; font-weight: 500;
+    color: var(--accent2);
+  }
+
+  .price-was {
+    font-family: var(--font-mono);
+    font-size: 13px; color: var(--muted);
+    text-decoration: line-through;
+  }
+
+  .price-save {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--accent);
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  .keyword-tag {
+    display: inline-block;
+    font-size: 10px; color: var(--muted);
+    background: var(--tag-bg);
+    padding: 2px 8px; border-radius: 3px;
+    font-family: var(--font-mono);
+  }
+
+  .card-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; gap: 8px;
+  }
+
+  .btn-post {
+    flex: 1; padding: 9px 12px;
+    background: var(--ink);
+    color: white; border: none;
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-post:hover { background: #333; }
+
+  .btn-link {
+    padding: 9px 12px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    color: var(--ink);
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    text-decoration: none;
+    display: flex; align-items: center;
+  }
+
+  .btn-link:hover { border-color: var(--ink); }
+
+  /* ── EMPTY / LOADING ── */
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center; padding: 80px 20px;
+    color: var(--muted);
+  }
+
+  .empty-title {
+    font-family: var(--font-display);
+    font-size: 28px; font-weight: 700;
+    color: var(--ink); margin-bottom: 8px;
+  }
+
+  .loading-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .skeleton {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .sk-img { height: 160px; background: var(--surface2); }
+  .sk-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .sk-line { height: 12px; border-radius: 4px; background: var(--surface2); }
+  .sk-line.w60 { width: 60%; }
+  .sk-line.w80 { width: 80%; }
+  .sk-line.w40 { width: 40%; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,23,20,0.7);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 28px;
+    width: 92%; max-width: 500px;
+    max-height: 85vh; overflow-y: auto;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0); }
+
+  .modal-title {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 900;
+    margin-bottom: 4px; color: var(--ink);
+  }
+
+  .modal-sub {
+    font-size: 12px; color: var(--muted);
+    font-family: var(--font-mono);
+    margin-bottom: 20px;
+  }
+
+  .platform-tabs {
+    display: flex; gap: 6px; margin-bottom: 14px;
+  }
+
+  .ptab {
+    padding: 6px 14px; border-radius: 4px;
+    border: 1.5px solid var(--border);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    background: var(--surface);
+    color: var(--muted);
+  }
+
+  .ptab.active { background: var(--ink); color: white; border-color: var(--ink); }
+
+  .post-preview {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    font-size: 13px; line-height: 1.7;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    margin-bottom: 16px;
+    color: var(--ink);
+    max-height: 260px; overflow-y: auto;
+  }
+
+  .modal-actions { display: flex; gap: 8px; }
+
+  .btn-copy {
+    flex: 1; padding: 11px;
+    background: var(--accent); color: white;
+    border: none; border-radius: 5px;
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s;
+  }
+
+  .btn-copy:hover { background: #b84508; }
+
+  .btn-close-modal {
+    padding: 11px 18px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    font-family: var(--font-body);
+    font-size: 13px; cursor: pointer;
+    color: var(--ink);
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--ink); color: white;
+    padding: 12px 20px; border-radius: 6px;
+    font-size: 13px; font-family: var(--font-mono);
+    z-index: 300;
+    transform: translateY(60px);
+    transition: transform 0.25s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .toast.show { transform: translateY(0); }
+
+  /* ── NO DATA BANNER ── */
+  .demo-banner {
+    background: var(--warn);
+    color: white;
+    padding: 10px 24px;
+    font-size: 12px; font-family: var(--font-mono);
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 640px) {
+    .header-stats { display: none; }
+    .grid { grid-template-columns: 1fr; }
+    .filter-pills { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div>
+        <div class="logo-name">Price<span>zuu</span></div>
+        <div class="logo-tag">Deal Operations HQ</div>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="hstat">
+        <span class="hstat-val" id="stat-total">—</span>
+        <span class="hstat-label">Deals Live</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val orange" id="stat-best">—</span>
+        <span class="hstat-label">Best Discount</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val green" id="stat-avg">—</span>
+        <span class="hstat-label">Avg Saving</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" id="stat-cats">—</span>
+        <span class="hstat-label">Categories</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="updated-text" id="updated-text">Loading...</span>
+      <button class="btn-refresh" onclick="loadDeals()">
+        <span id="spin">↻</span> Refresh
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker">
+    <span class="ticker-item">Loading deals...</span>
+  </div>
+</div>
+
+<div id="demo-banner" class="demo-banner" style="display:none">
+  ⚠️  MODO DEMO — Ejecuta tracker.py para cargar deals reales desde Amazon ES · Zooplus · PcComponentes
+</div>
+
+<div class="wrapper">
+  <div class="controls">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-box" type="text" placeholder="Buscar producto, marca, categoría..." id="search-input" oninput="renderGrid()">
+    </div>
+    <div class="filter-pills" id="filter-pills"></div>
+    <select class="sort-select" id="sort-select" onchange="renderGrid()">
+      <option value="discount">Mayor descuento</option>
+      <option value="price_asc">Precio: menor a mayor</option>
+      <option value="price_desc">Precio: mayor a menor</option>
+      <option value="newest">Más recientes</option>
+    </select>
+  </div>
+
+  <div id="main-content">
+    <div class="loading-grid" id="loading-skeletons">
+      ${Array(6).fill('<div class="skeleton"><div class="sk-img"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line w40"></div></div></div>').join('')}
+    </div>
+  </div>
+
+  <div class="grid" id="product-grid" style="display:none"></div>
+</div>
+
+<!-- Post Modal -->
+<div class="modal-overlay" id="modal" onclick="handleModalClick(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-title">📢 Publicar Deal</div>
+    <div class="modal-sub" id="modal-sub"></div>
+    <div class="platform-tabs">
+      <button class="ptab active" onclick="switchTab('telegram', this)">Telegram</button>
+      <button class="ptab" onclick="switchTab('tiktok', this)">TikTok</button>
+      <button class="ptab" onclick="switchTab('instagram', this)">Instagram</button>
+    </div>
+    <div class="post-preview" id="post-preview"></div>
+    <div class="modal-actions">
+      <button class="btn-copy" onclick="copyPost()">📋 Copiar texto</button>
+      <button class="btn-close-modal" onclick="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let allDeals = [];
+let activeFilter = "Todos";
+let activeTab = "telegram";
+let currentDeal = null;
+
+const CAT_EMOJI = {
+  "👶 Bebés": "👶", "🐾 Mascotas": "🐾", "🚗 Vehículos": "🚗",
+  "🏠 Hogar": "🏠", "🌱 Jardín": "🌱", "💄 Belleza": "💄",
+  "❤️ Salud": "❤️", "🍽️ Cocina": "🍽️", "🖨️ Tecnología": "🖨️",
+  "👴 Mayores": "👴", "🌸 Higiene Femenina": "🌸", "🪒 Depilación": "🪒",
+  "✨ Skincare": "✨", "💇 Cabello": "💇",
+};
+
+// ── DEMO DATA (shown when deals.json not available) ───────────────────────────
+const DEMO_DEALS = [
+  { id:"demo1", title:"Dodot Sensitive Talla 3 — 52 unidades", category:"👶 Bebés", keyword:"pañales talla 3", retailer:"Amazon ES", retailer_color:"#FF9900", price:11.99, original_price:16.99, discount_pct:29, rating:"4.6", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo2", title:"Royal Canin Indoor Cat 10kg", category:"🐾 Mascotas", keyword:"pienso gato", retailer:"Zooplus ES", retailer_color:"#E30613", price:38.50, original_price:52.00, discount_pct:26, rating:"4.8", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo3", title:"Ariel All-in-1 Pods 50 lavados", category:"🏠 Hogar", keyword:"detergente lavadora capsulas", retailer:"Amazon ES", retailer_color:"#FF9900", price:9.99, original_price:14.50, discount_pct:31, rating:"4.7", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo4", title:"Castrol Edge 5W-30 LL 5 litros", category:"🚗 Vehículos", keyword:"aceite motor 5w30", retailer:"Amazon ES", retailer_color:"#FF9900", price:22.90, original_price:32.00, discount_pct:28, rating:"4.8", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo5", title:"Solgar Vitamina D3 2000 IU 100 cápsulas", category:"❤️ Salud", keyword:"vitamina D3", retailer:"Amazon ES", retailer_color:"#FF9900", price:11.20, original_price:15.50, discount_pct:28, rating:"4.9", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo6", title:"Lavazza Crema e Gusto 1kg café molido", category:"🍽️ Cocina", keyword:"cafe molido", retailer:"Amazon ES", retailer_color:"#FF9900", price:7.49, original_price:10.99, discount_pct:32, rating:"4.6", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo7", title:"HP 305XL Cartucho Tinta Color", category:"🖨️ Tecnología", keyword:"cartuchos tinta HP", retailer:"PcComponentes", retailer_color:"#0066CC", price:14.90, original_price:20.99, discount_pct:29, rating:"4.5", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo8", title:"TENA Lady Normal 24 compresas", category:"👴 Mayores", keyword:"compresas incontinencia", retailer:"Amazon ES", retailer_color:"#FF9900", price:4.99, original_price:7.50, discount_pct:33, rating:"4.7", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo9", title:"Always Ultra Normal con alas 52 unidades", category:"🌸 Higiene Femenina", keyword:"compresas con alas", retailer:"Amazon ES", retailer_color:"#FF9900", price:5.49, original_price:7.99, discount_pct:31, rating:"4.6", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo10", title:"Garnier Agua Micelar Todo en 1 400ml", category:"✨ Skincare", keyword:"agua micelar desmaquillante", retailer:"Amazon ES", retailer_color:"#FF9900", price:3.99, original_price:5.99, discount_pct:33, rating:"4.7", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo11", title:"Batiste Original Champú Seco 200ml", category:"💇 Cabello", keyword:"champú seco", retailer:"Amazon ES", retailer_color:"#FF9900", price:3.49, original_price:5.50, discount_pct:37, rating:"4.5", image:"", url:"#", found_at: new Date().toISOString() },
+  { id:"demo12", title:"Veet Tiras Depilatorias Cuerpo 40 unidades", category:"🪒 Depilación", keyword:"tiras depilatorias cuerpo", retailer:"Amazon ES", retailer_color:"#FF9900", price:5.99, original_price:8.99, discount_pct:33, rating:"4.3", image:"", url:"#", found_at: new Date().toISOString() },
+];
+
+// ── LOAD DEALS ────────────────────────────────────────────────────────────────
+async function loadDeals() {
+  const spin = document.getElementById('spin');
+  spin.classList.add('spinning');
+
+  try {
+    const r = await fetch('deals.json?t=' + Date.now());
+    if (!r.ok) throw new Error('No deals.json');
+    const data = await r.json();
+    allDeals = data.deals || [];
+
+    document.getElementById('updated-text').textContent =
+      'Updated: ' + new Date(data.last_updated).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+    updateStats(data);
+    buildTicker();
+  } catch(e) {
+    // Use demo data
+    allDeals = DEMO_DEALS;
+    document.getElementById('demo-banner').style.display = 'block';
+    document.getElementById('updated-text').textContent = 'Demo mode';
+    updateStatsFromDeals();
+    buildTicker();
+  }
+
+  document.getElementById('loading-skeletons').style.display = 'none';
+  document.getElementById('product-grid').style.display = 'grid';
+  buildPills();
+  renderGrid();
+  spin.classList.remove('spinning');
+}
+
+function updateStats(data) {
+  const s = data.stats || {};
+  document.getElementById('stat-total').textContent = data.total_deals || allDeals.length;
+  document.getElementById('stat-best').textContent = (s.best_deal || 0) + '%';
+  document.getElementById('stat-avg').textContent = (s.avg_discount || 0) + '%';
+  document.getElementById('stat-cats').textContent = Object.keys(s.by_category || {}).length;
+}
+
+function updateStatsFromDeals() {
+  const best = Math.max(...allDeals.map(d => d.discount_pct));
+  const avg = Math.round(allDeals.reduce((a,d) => a + d.discount_pct, 0) / allDeals.length);
+  const cats = new Set(allDeals.map(d => d.category)).size;
+  document.getElementById('stat-total').textContent = allDeals.length;
+  document.getElementById('stat-best').textContent = best + '%';
+  document.getElementById('stat-avg').textContent = avg + '%';
+  document.getElementById('stat-cats').textContent = cats;
+}
+
+function buildTicker() {
+  const items = allDeals.slice(0, 12).map(d =>
+    `<span class="ticker-item">🔥 <strong>${d.title.substring(0,40)}</strong> — €${d.price.toFixed(2)} <span class="ticker-sep">·</span> -${d.discount_pct}%</span>`
+  ).join('');
+  const ticker = document.getElementById('ticker');
+  ticker.innerHTML = items + items; // Duplicate for seamless loop
+}
+
+function buildPills() {
+  const cats = ["Todos", ...new Set(allDeals.map(d => d.category))];
+  document.getElementById('filter-pills').innerHTML = cats.map(cat =>
+    `<button class="pill ${cat === activeFilter ? 'active' : ''}" onclick="setFilter('${cat.replace(/'/g,"\\'")}')">
+      ${cat === "Todos" ? "🛒 Todos" : cat}
+    </button>`
+  ).join('');
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  buildPills();
+  renderGrid();
+}
+
+// ── FILTER + SORT ─────────────────────────────────────────────────────────────
+function getFiltered() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const sort = document.getElementById('sort-select').value;
+
+  let filtered = allDeals.filter(d => {
+    const matchCat = activeFilter === 'Todos' || d.category === activeFilter;
+    const matchQ = !q || d.title.toLowerCase().includes(q) ||
+                   d.keyword.toLowerCase().includes(q) ||
+                   d.retailer.toLowerCase().includes(q) ||
+                   d.category.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+
+  if (sort === 'discount') filtered.sort((a,b) => b.discount_pct - a.discount_pct);
+  else if (sort === 'price_asc') filtered.sort((a,b) => a.price - b.price);
+  else if (sort === 'price_desc') filtered.sort((a,b) => b.price - a.price);
+  else if (sort === 'newest') filtered.sort((a,b) => new Date(b.found_at) - new Date(a.found_at));
+
+  return filtered;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  const grid = document.getElementById('product-grid');
+  const filtered = getFiltered();
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty">
+      <div style="font-size:48px;margin-bottom:16px">🦉</div>
+      <div class="empty-title">No deals found</div>
+      <p style="font-size:14px;color:var(--muted);margin-top:8px">Try a different search or category</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map((d, i) => renderCard(d, i)).join('');
+}
+
+function renderCard(d, i) {
+  const saved = (d.original_price - d.price).toFixed(2);
+  const isTop = d.discount_pct >= 30;
+  const emoji = CAT_EMOJI[d.category] || '🛒';
+
+  const imageHTML = d.image
+    ? `<img class="card-image" src="${d.image}" alt="${d.title}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+    : '';
+  const placeholderHTML = `<div class="card-image-placeholder" ${d.image ? 'style="display:none"' : ''}>${emoji}</div>`;
+
+  return `<div class="card ${isTop ? 'top-deal' : ''}" data-id="${d.id}">
+    <div class="discount-ribbon">-${d.discount_pct}%</div>
+    ${imageHTML}${placeholderHTML}
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="card-cat">${d.category}</span>
+        <span class="retailer-badge" style="background:${d.retailer_color}20;color:${d.retailer_color}">${d.retailer}</span>
+      </div>
+      <div class="card-title">${d.title}</div>
+      <div class="price-block">
+        <span class="price-now">€${d.price.toFixed(2)}</span>
+        <span class="price-was">€${d.original_price.toFixed(2)}</span>
+        <span class="price-save">Ahorras €${saved}</span>
+      </div>
+      <div>
+        <span class="keyword-tag">${d.keyword}</span>
+        ${d.rating && d.rating !== 'N/A' ? `<span class="keyword-tag" style="margin-left:4px">⭐ ${d.rating}</span>` : ''}
+      </div>
+    </div>
+    <div class="card-footer">
+      <button class="btn-post" onclick="openModal('${d.id}')">📢 Generar Post</button>
+      <a class="btn-link" href="${d.url}" target="_blank" rel="noopener" title="Ver en tienda">↗</a>
+    </div>
+  </div>`;
+}
+
+// ── POST GENERATOR ────────────────────────────────────────────────────────────
+const POSTS = {
+  telegram: (d) => {
+    const saved = (d.original_price - d.price).toFixed(2);
+    return `🚨 DEAL ALERT — ${d.discount_pct}% DESCUENTO
+
+${d.category}
+
+📦 ${d.title}
+
+💰 Ahora: €${d.price.toFixed(2)}
+~~Antes: €${d.original_price.toFixed(2)}~~
+✅ Ahorras: €${saved} (${d.discount_pct}% off)
+🏪 En: ${d.retailer}
+
+⚡ Precio limitado — ¡cómpralo antes de que suba!
+
+🔗 ${d.url}
+
+━━━━━━━━━━━━━━━
+📲 @pricezuu_es | Ofertas diarias en esenciales
+#oferta #descuento #ahorro #pricezuu`;
+  },
+  tiktok: (d) => {
+    const saved = (d.original_price - d.price).toFixed(2);
+    return `ESTO NO LO PUEDE VER TODO EL MUNDO 👀
+
+${d.title}
+
+De €${d.original_price.toFixed(2)} a €${d.price.toFixed(2)} 🤯
+-${d.discount_pct}% — ahorras €${saved}
+
+Link en bio 🔗
+
+#oferta #descuento #ahorro #comprasinteligente #pricezuu #${d.category.split(' ').pop().toLowerCase()}`;
+  },
+  instagram: (d) => {
+    const saved = (d.original_price - d.price).toFixed(2);
+    return `${d.category} | OFERTA DEL DÍA 🔥
+
+${d.title}
+
+PRECIO: €${d.price.toFixed(2)} (antes €${d.original_price.toFixed(2)})
+DESCUENTO: ${d.discount_pct}% — €${saved} de ahorro
+DÓNDE: ${d.retailer}
+
+👉 Link directo en nuestra BIO
+
+━━━━━━━━━━━━━━━
+Síguenos @pricezuu_es para recibir las mejores ofertas en productos esenciales todos los días 🛒
+
+#oferta #descuento #ahorro #ofertas #compras #precio #deal #pricezuu #productosesenciales`;
+  }
+};
+
+function openModal(id) {
+  currentDeal = allDeals.find(d => d.id === id);
+  if (!currentDeal) return;
+  document.getElementById('modal-sub').textContent = `${currentDeal.title.substring(0, 50)} · -${currentDeal.discount_pct}%`;
+  updatePostPreview();
+  document.getElementById('modal').classList.add('open');
+}
+
+function updatePostPreview() {
+  if (!currentDeal) return;
+  document.getElementById('post-preview').textContent = POSTS[activeTab](currentDeal);
+}
+
+function switchTab(tab, el) {
+  activeTab = tab;
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  updatePostPreview();
+}
+
+function handleModalClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function copyPost() {
+  const text = document.getElementById('post-preview').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✓ Copiado — listo para pegar en ' + activeTab.charAt(0).toUpperCase() + activeTab.slice(1));
+    closeModal();
+  });
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadDeals();
+</script>
+</body>
+</html>
